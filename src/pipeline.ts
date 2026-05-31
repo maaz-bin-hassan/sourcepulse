@@ -19,7 +19,7 @@ import {
   type FixResult,
   type PluginResult,
   type ScannerName,
-  type StackRadarReport,
+  type SourcePulseReport,
   scannerNames,
 } from "./types/index.js";
 
@@ -48,7 +48,7 @@ const runOnce = async (
   selected: Set<ScannerName>,
   config: ResolvedConfig,
   fixes?: FixResult,
-): Promise<StackRadarReport> => {
+): Promise<SourcePulseReport> => {
   const [analyses, stack, projectName] = await Promise.all([
     analyzeProject(root, config.ignoreFiles),
     detectStack(root),
@@ -93,7 +93,7 @@ const runOnce = async (
   ]);
 
   const partial = {
-    version: "0.4.0",
+    version: "0.4.1",
     root,
     projectName,
     stack,
@@ -111,9 +111,9 @@ const runOnce = async (
   return { ...partial, plugins, score, quickWins };
 };
 
-export const runStackRadar = async (
+export const runSourcePulse = async (
   options: RunOptions,
-): Promise<StackRadarReport> => {
+): Promise<SourcePulseReport> => {
   const root = resolve(options.root);
   const selected = new Set(options.only ?? scannerNames);
   const config = await loadConfig(root);

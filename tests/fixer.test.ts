@@ -16,7 +16,7 @@ afterEach(async () => {
 
 describe("applyFixes", () => {
   it("removes unused dependencies from package.json", async () => {
-    const root = await mkdtemp(resolve(tmpdir(), "stackradar-fix-"));
+    const root = await mkdtemp(resolve(tmpdir(), "sourcepulse-fix-"));
     temporaryRoots.push(root);
     await writeFile(
       resolve(root, "package.json"),

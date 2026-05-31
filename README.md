@@ -1,12 +1,12 @@
-# StackRadar
+# SourcePulse
 
 Zero-config project intelligence for JavaScript and TypeScript repositories.
 
 ```bash
-npx stackradar
+npx sourcepulse
 ```
 
-StackRadar scans a local repository and produces a scored health report covering dependencies, dead code, environment hygiene, circular imports, security issues, and Git freshness. It runs locally with no cloud service or required configuration.
+SourcePulse scans a local repository and produces a scored health report covering dependencies, dead code, environment hygiene, circular imports, security issues, and Git freshness. It runs locally with no cloud service or required configuration.
 
 ## Features
 
@@ -28,23 +28,23 @@ StackRadar scans a local repository and produces a scored health report covering
 ## Usage
 
 ```bash
-stackradar [root]
+sourcepulse [root]
 
-stackradar --json
-stackradar --ci --score-min=70
-stackradar --only=deps,env,security
-stackradar --offline
-stackradar --fix
+sourcepulse --json
+sourcepulse --ci --score-min=70
+sourcepulse --only=deps,env,security
+sourcepulse --offline
+sourcepulse --fix
 ```
 
 `--offline` skips `npm outdated` and `npm audit`. `--fix` removes packages identified as unused from `package.json` and refreshes `package-lock.json` when present. Review the diff before committing.
 
 ## Configuration
 
-StackRadar automatically loads `stackradar.config.ts`, `.mts`, `.js`, `.mjs`, `.cjs`, or `.json` from the scanned repository root. Legacy `stackprobe.config.*` files are also supported.
+SourcePulse automatically loads `sourcepulse.config.ts`, `.mts`, `.js`, `.mjs`, `.cjs`, or `.json` from the scanned repository root. Legacy `stackradar.config.*` and `stackprobe.config.*` files are also supported.
 
 ```ts
-import type { StackRadarConfig } from "stackradar";
+import type { SourcePulseConfig } from "sourcepulse";
 
 export default {
   weights: {
@@ -56,28 +56,28 @@ export default {
   ignoreFiles: ["**/generated/**"],
   externalChecks: true,
   staleBranchDays: 60,
-  plugins: ["./tools/stackradar-license-plugin.ts"],
-} satisfies StackRadarConfig;
+  plugins: ["./tools/sourcepulse-license-plugin.ts"],
+} satisfies SourcePulseConfig;
 ```
 
 Plugins receive the scan context and return findings:
 
 ```ts
-import type { StackRadarPlugin } from "stackradar";
+import type { SourcePulsePlugin } from "sourcepulse";
 
 export default {
   name: "license-policy",
   scan: async ({ root }) => {
     return [{ message: `Review licenses in ${root}`, penalty: 2 }];
   },
-} satisfies StackRadarPlugin;
+} satisfies SourcePulsePlugin;
 ```
 
 ## CI
 
 ```yaml
-- name: Run StackRadar
-  run: npx stackradar --ci --json --score-min=70
+- name: Run SourcePulse
+  run: npx sourcepulse --ci --json --score-min=70
 ```
 
 The command exits with code `1` when the resulting score is below the selected minimum.

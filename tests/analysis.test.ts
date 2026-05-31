@@ -11,7 +11,7 @@ const fixtureRoot = fileURLToPath(
   new URL("./fixtures/sample", import.meta.url),
 );
 
-describe("StackRadar scanners", () => {
+describe("SourcePulse scanners", () => {
   it("finds dependency usage without external npm calls", async () => {
     const analyses = await analyzeProject(fixtureRoot);
     const result = await scanDependencies(fixtureRoot, analyses, {

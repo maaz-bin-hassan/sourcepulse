@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import type { ScannerName, StackRadarReport } from "./types/index.js";
+import type { ScannerName, SourcePulseReport } from "./types/index.js";
 
 const categoryLabels: Record<ScannerName, string> = {
   deps: "Dependencies",
@@ -10,7 +10,7 @@ const categoryLabels: Record<ScannerName, string> = {
   freshness: "Freshness",
 };
 
-const stackLabel = (report: StackRadarReport): string =>
+const stackLabel = (report: SourcePulseReport): string =>
   [
     report.stack.framework,
     report.stack.orm,
@@ -23,10 +23,10 @@ const stackLabel = (report: StackRadarReport): string =>
 const line = (label: string, value: string | number | boolean): string =>
   `  ${pc.dim("-")} ${label}: ${String(value)}`;
 
-export const renderTerminalReport = (report: StackRadarReport): string => {
+export const renderTerminalReport = (report: SourcePulseReport): string => {
   const { results } = report;
   const output = [
-    pc.bold(`stackradar v${report.version}`),
+    pc.bold(`sourcepulse v${report.version}`),
     "",
     `Scanning ${pc.cyan(report.projectName)} (${stackLabel(report)})`,
     "",
@@ -94,5 +94,5 @@ export const renderTerminalReport = (report: StackRadarReport): string => {
   return output.join("\n");
 };
 
-export const renderJsonReport = (report: StackRadarReport): string =>
+export const renderJsonReport = (report: SourcePulseReport): string =>
   JSON.stringify(report, null, 2);

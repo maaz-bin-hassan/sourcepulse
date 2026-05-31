@@ -1,5 +1,5 @@
 {
-  "name": "@stackradar/stackradar",
-  "version": "0.4.0",
+  "name": "@sourcepulse/sourcepulse",
+  "version": "0.4.1",
   "exports": "./src/index.ts"
 }

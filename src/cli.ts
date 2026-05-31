@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { cac } from "cac";
-import { runStackRadar } from "./pipeline.js";
+import { runSourcePulse } from "./pipeline.js";
 import { renderJsonReport, renderTerminalReport } from "./reporter.js";
 import { type ScannerName, scannerNames } from "./types/index.js";
 
@@ -18,7 +18,7 @@ const parseOnly = (value: string | undefined): ScannerName[] | undefined => {
   return requested as ScannerName[];
 };
 
-const cli = cac("stackradar");
+const cli = cac("sourcepulse");
 
 cli
   .command("[root]", "Scan a JavaScript or TypeScript repository")
@@ -47,7 +47,7 @@ cli
       },
     ) => {
       try {
-        const report = await runStackRadar({
+        const report = await runSourcePulse({
           root: resolve(root ?? process.cwd()),
           only: parseOnly(options.only),
           fix: options.fix,
@@ -79,5 +79,5 @@ cli
   );
 
 cli.help();
-cli.version("0.4.0");
+cli.version("0.4.1");
 cli.parse();

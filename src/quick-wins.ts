@@ -1,7 +1,7 @@
-import type { StackRadarReport } from "./types/index.js";
+import type { SourcePulseReport } from "./types/index.js";
 
 export const buildQuickWins = (
-  report: Pick<StackRadarReport, "results" | "plugins">,
+  report: Pick<SourcePulseReport, "results" | "plugins">,
   limit = 5,
 ): string[] => {
   const { results } = report;

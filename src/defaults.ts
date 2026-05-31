@@ -1,7 +1,7 @@
 import type {
   ScannerName,
   ScannerResults,
-  StackRadarConfig,
+  SourcePulseConfig,
 } from "./types/index.js";
 
 export const defaultWeights: Record<ScannerName, number> = {
@@ -15,7 +15,7 @@ export const defaultWeights: Record<ScannerName, number> = {
 
 export const defaultConfig: Required<
   Pick<
-    StackRadarConfig,
+    SourcePulseConfig,
     | "ignoreDependencies"
     | "ignoreEnvVars"
     | "ignoreFiles"

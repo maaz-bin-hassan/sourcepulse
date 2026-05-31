@@ -104,7 +104,7 @@ export interface FixResult {
   warnings: string[];
 }
 
-export interface StackRadarReport {
+export interface SourcePulseReport {
   version: string;
   root: string;
   projectName: string;
@@ -118,20 +118,20 @@ export interface StackRadarReport {
 
 export interface PluginContext {
   root: string;
-  report: Omit<StackRadarReport, "plugins" | "score" | "quickWins">;
+  report: Omit<SourcePulseReport, "plugins" | "score" | "quickWins">;
 }
 
-export interface StackRadarPlugin {
+export interface SourcePulsePlugin {
   name: string;
   scan(context: PluginContext): Promise<PluginFinding[]> | PluginFinding[];
 }
 
-export interface StackRadarConfig {
+export interface SourcePulseConfig {
   weights?: Partial<Record<ScannerName, number>>;
   ignoreDependencies?: string[];
   ignoreEnvVars?: string[];
   ignoreFiles?: string[];
   externalChecks?: boolean;
   staleBranchDays?: number;
-  plugins?: Array<string | StackRadarPlugin>;
+  plugins?: Array<string | SourcePulsePlugin>;
 }

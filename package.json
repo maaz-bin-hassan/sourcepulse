@@ -1,10 +1,10 @@
 {
-  "name": "stackradar",
-  "version": "0.4.0",
+  "name": "sourcepulse",
+  "version": "0.4.1",
   "description": "Zero-config project intelligence CLI for JavaScript and TypeScript repositories",
   "type": "module",
   "bin": {
-    "stackradar": "./dist/cli.js"
+    "sourcepulse": "dist/cli.js"
   },
   "exports": {
     ".": "./dist/index.js"

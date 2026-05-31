@@ -3,9 +3,15 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { createJiti } from "jiti";
 import { defaultConfig, defaultWeights } from "./defaults.js";
-import type { StackRadarConfig, StackRadarPlugin } from "./types/index.js";
+import type { SourcePulseConfig, SourcePulsePlugin } from "./types/index.js";
 
 const configFiles = [
+  "sourcepulse.config.ts",
+  "sourcepulse.config.mts",
+  "sourcepulse.config.js",
+  "sourcepulse.config.mjs",
+  "sourcepulse.config.cjs",
+  "sourcepulse.config.json",
   "stackradar.config.ts",
   "stackradar.config.mts",
   "stackradar.config.js",
@@ -30,8 +36,8 @@ const exists = async (file: string): Promise<boolean> => {
 };
 
 export interface ResolvedConfig
-  extends Required<Omit<StackRadarConfig, "plugins">> {
-  plugins: StackRadarPlugin[];
+  extends Required<Omit<SourcePulseConfig, "plugins">> {
+  plugins: SourcePulsePlugin[];
 }
 
 const importModule = async (file: string): Promise<unknown> => {
@@ -50,14 +56,14 @@ export const loadConfig = async (root: string): Promise<ResolvedConfig> => {
   ).find(Boolean);
 
   const loaded = configFile
-    ? ((await importModule(configFile)) as StackRadarConfig)
+    ? ((await importModule(configFile)) as SourcePulseConfig)
     : {};
   const rawPlugins = loaded.plugins ?? defaultConfig.plugins;
   const plugins = await Promise.all(
     rawPlugins.map(async (plugin) => {
       if (typeof plugin !== "string") return plugin;
       const file = plugin.startsWith(".") ? resolve(root, plugin) : plugin;
-      return (await importModule(file)) as StackRadarPlugin;
+      return (await importModule(file)) as SourcePulsePlugin;
     }),
   );
 
