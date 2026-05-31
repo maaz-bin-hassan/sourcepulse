@@ -28,15 +28,17 @@ export const scanFreshness = async (
   root: string,
   staleBranchDays: number,
 ): Promise<FreshnessResult> => {
-  const [lastCommit, latestTag, branchRows] = await Promise.all([
+  const [lastCommit, latestTagRaw, branchRows] = await Promise.all([
     git(root, ["log", "-1", "--format=%ct"]),
-    git(root, ["log", "-1", "--tags", "--format=%ct"]),
+    git(root, ["tag", "--sort=-creatordate", "--format=%(creatordate:unix)"]),
     git(root, [
       "for-each-ref",
       "--format=%(refname:short)|%(committerdate:unix)",
       "refs/heads",
     ]),
   ]);
+  const latestTag = latestTagRaw?.split("\n")[0] ?? null;
+
   const staleBranches = (branchRows ?? "")
     .split("\n")
     .filter(Boolean)

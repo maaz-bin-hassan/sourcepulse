@@ -57,13 +57,17 @@ export const renderTerminalReport = (report: SourcePulseReport): string => {
       "Last commit",
       results.freshness.daysSinceCommit === null
         ? "Unknown"
-        : `${results.freshness.daysSinceCommit} days ago`,
+        : results.freshness.daysSinceCommit === 0
+          ? "Today"
+          : `${results.freshness.daysSinceCommit} days ago`,
     ),
     line(
       "Last release",
       results.freshness.daysSinceRelease === null
         ? "Unknown"
-        : `${results.freshness.daysSinceRelease} days ago`,
+        : results.freshness.daysSinceRelease === 0
+          ? "Today"
+          : `${results.freshness.daysSinceRelease} days ago`,
     ),
   ];
 
