@@ -1,47 +1,114 @@
 # SourcePulse
 
+[![npm version](https://img.shields.io/npm/v/sourcepulse.svg)](https://www.npmjs.com/package/sourcepulse)
+[![license](https://img.shields.io/npm/l/sourcepulse.svg)](./LICENSE)
+
 Zero-config project intelligence for JavaScript and TypeScript repositories.
 
 ```bash
 npx sourcepulse
 ```
 
-SourcePulse scans a local repository and produces a scored health report covering dependencies, dead code, environment hygiene, circular imports, security issues, and Git freshness. It runs locally with no cloud service or required configuration.
+SourcePulse scans a local repository and produces a scored health report with practical cleanup suggestions. It runs locally, does not upload your source code, and does not require a configuration file.
 
-## Features
+## What It Checks
 
-- Detects frameworks, runtimes, bundlers, ORMs, and test runners
-- Reports outdated, unused, and vulnerable npm packages
-- Finds unused exports, orphan files, and circular imports with TypeScript AST analysis
-- Detects ghost and phantom environment variables
-- Flags likely hardcoded credentials and committed `.env` files
-- Measures Git activity and stale branches
-- Prints terminal or JSON reports and supports CI score thresholds
-- Supports custom weights, ignore lists, plugins, and conservative dependency cleanup
+| Area | Checks |
+| --- | --- |
+| Dependencies | Outdated packages, unused packages, npm audit vulnerabilities |
+| Dead code | Unused exports and orphan files |
+| Environment | Defined-but-unused variables and referenced-but-missing variables |
+| Imports | Circular dependency chains |
+| Security | Likely hardcoded credentials and committed `.env` files |
+| Freshness | Recent commits, releases, and stale branches |
 
-## Requirements
+## Quick Start
 
-- Node.js 20 or newer
-- npm for external dependency checks
-- Git for repository freshness and tracked `.env` detection
-
-## Usage
+Scan the current directory:
 
 ```bash
-sourcepulse [root]
-
-sourcepulse --json
-sourcepulse --ci --score-min=70
-sourcepulse --only=deps,env,security
-sourcepulse --offline
-sourcepulse --fix
+npx sourcepulse
 ```
 
-`--offline` skips `npm outdated` and `npm audit`. `--fix` removes packages identified as unused from `package.json` and refreshes `package-lock.json` when present. Review the diff before committing.
+Scan another project:
 
-## Configuration
+```bash
+npx sourcepulse ../my-project
+```
 
-SourcePulse automatically loads `sourcepulse.config.ts`, `.mts`, `.js`, `.mjs`, `.cjs`, or `.json` from the scanned repository root. Legacy `stackradar.config.*` and `stackprobe.config.*` files are also supported.
+Example output:
+
+```text
+sourcepulse v0.4.1
+
+Scanning my-app (Next.js + Prisma + Vitest)
+
+Overall Score: 82/100 (B)
+
+Dependencies
+  - Outdated: 4
+  - Unused: 1
+  - Vulnerabilities: 0
+
+Dead Code
+  - Unused exports: 3
+  - Orphan files: 1
+
+Environment
+  - Ghost vars: 1
+  - Phantom refs: 0
+
+Quick Wins
+  1. Remove unused package "left-pad"
+  2. Delete or connect orphan file src/legacy.ts
+  3. Remove unused environment variable OLD_API_URL
+```
+
+## CLI Options
+
+| Option | Description |
+| --- | --- |
+| `--json` | Print the complete report as JSON |
+| `--ci` | Enable CI exit behavior with a default minimum score of `70` |
+| `--score-min <score>` | Exit with code `1` when the score is below the selected threshold |
+| `--only <scanners>` | Run selected scanners, such as `deps,env,security` |
+| `--offline` | Skip network-backed `npm outdated` and `npm audit` checks |
+| `--fix` | Remove detected unused packages from `package.json` |
+
+Examples:
+
+```bash
+npx sourcepulse --json
+npx sourcepulse --only=deps,env,security
+npx sourcepulse --offline
+npx sourcepulse --ci --score-min=80
+```
+
+### Using `--fix`
+
+`--fix` only removes packages detected as unused and refreshes `package-lock.json` when present.
+
+```bash
+npx sourcepulse --fix
+git diff
+```
+
+Review the resulting diff before committing. Static analysis can require project-specific judgment.
+
+## CI Usage
+
+Add SourcePulse to GitHub Actions:
+
+```yaml
+- name: Run SourcePulse
+  run: npx sourcepulse --ci --json --score-min=70
+```
+
+The command exits with code `1` when the score falls below the selected minimum.
+
+## Optional Configuration
+
+SourcePulse works without configuration. To customize behavior, add `sourcepulse.config.ts` in the project root:
 
 ```ts
 import type { SourcePulseConfig } from "sourcepulse";
@@ -56,11 +123,25 @@ export default {
   ignoreFiles: ["**/generated/**"],
   externalChecks: true,
   staleBranchDays: 60,
-  plugins: ["./tools/sourcepulse-license-plugin.ts"],
 } satisfies SourcePulseConfig;
 ```
 
-Plugins receive the scan context and return findings:
+Supported config filenames:
+
+```text
+sourcepulse.config.ts
+sourcepulse.config.mts
+sourcepulse.config.js
+sourcepulse.config.mjs
+sourcepulse.config.cjs
+sourcepulse.config.json
+```
+
+Legacy `stackradar.config.*` and `stackprobe.config.*` filenames are also supported.
+
+## Plugins
+
+Plugins can add project-specific findings:
 
 ```ts
 import type { SourcePulsePlugin } from "sourcepulse";
@@ -73,14 +154,19 @@ export default {
 } satisfies SourcePulsePlugin;
 ```
 
-## CI
+Register the plugin from your config file:
 
-```yaml
-- name: Run SourcePulse
-  run: npx sourcepulse --ci --json --score-min=70
+```ts
+export default {
+  plugins: ["./tools/sourcepulse-license-plugin.ts"],
+};
 ```
 
-The command exits with code `1` when the resulting score is below the selected minimum.
+## Requirements
+
+- Node.js `20` or newer
+- npm for dependency checks
+- Git for repository freshness and committed `.env` detection
 
 ## Development
 
@@ -92,9 +178,6 @@ npm test
 npm run build
 ```
 
-## Roadmap Delivered
+## License
 
-- `v0.1`: stack detection, dependency checks, environment hygiene, Git freshness, terminal report
-- `v0.2`: dead-code analysis, circular imports, JSON output
-- `v0.3`: secret detection, tracked `.env` checks, CI thresholds
-- `v0.4`: config loading, custom scoring, `--fix`, JSR metadata, plugin API
+[MIT](./LICENSE)
