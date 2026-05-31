@@ -1,0 +1,57 @@
+{
+  "name": "stackradar",
+  "version": "0.4.0",
+  "description": "Zero-config project intelligence CLI for JavaScript and TypeScript repositories",
+  "type": "module",
+  "bin": {
+    "stackradar": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build-check": "tsc --noEmit",
+    "changeset": "changeset",
+    "dev": "tsx src/cli.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "prepack": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "version-packages": "changeset version"
+  },
+  "keywords": [
+    "cli",
+    "code-quality",
+    "dependencies",
+    "security",
+    "typescript"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cac": "^6.7.14",
+    "dotenv": "^16.6.1",
+    "fast-glob": "^3.3.3",
+    "jiti": "^2.5.1",
+    "picocolors": "^1.1.1",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.3",
+    "@changesets/cli": "^2.29.7",
+    "@types/node": "^22.18.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.5",
+    "vitest": "^3.2.4"
+  }
+}
