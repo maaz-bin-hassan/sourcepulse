@@ -1,101 +1,182 @@
 import pc from "picocolors";
-import type { ScannerName, SourcePulseReport } from "./types/index.js";
+import type { SourcePulseReport } from "./types/index.js";
 
-const categoryLabels: Record<ScannerName, string> = {
-  deps: "Dependencies",
-  dead: "Dead Code",
-  env: "Environment",
-  circular: "Circular Dependencies",
-  security: "Security",
-  freshness: "Freshness",
+/* ── ANSI-aware string helpers ─────────────────────────────── */
+
+const RE_ANSI = /\x1b\[[0-9;]*m/g;
+const strip = (s: string): string => s.replace(RE_ANSI, "");
+
+/** Visible width accounting for wide (emoji) characters. */
+const vWidth = (s: string): number => {
+  let w = 0;
+  for (const c of strip(s)) {
+    w += (c.codePointAt(0) ?? 0) >= 0x1_0000 ? 2 : 1;
+  }
+  return w;
 };
 
-const stackLabel = (report: SourcePulseReport): string =>
-  [
-    report.stack.framework,
-    report.stack.orm,
-    report.stack.bundler,
-    report.stack.testRunner,
-  ]
-    .filter(Boolean)
-    .join(" + ") || report.stack.runtime;
+const padR = (s: string, n: number): string =>
+  s + " ".repeat(Math.max(0, n - vWidth(s)));
 
-const line = (label: string, value: string | number | boolean): string =>
-  `  ${pc.dim("-")} ${label}: ${String(value)}`;
+/* ── Layout constants ──────────────────────────────────────── */
+
+const COL = 32;
+const BAR = "─".repeat(COL);
+
+const topBorder = `┌${BAR}┬${BAR}┬${BAR}┐`;
+const midBorder = `├${BAR}┼${BAR}┼${BAR}┤`;
+const botBorder = `└${BAR}┴${BAR}┴${BAR}┘`;
+
+/**
+ * Render one visual row of the grid (multiple terminal lines)
+ * from three cells (each cell is an array of content lines).
+ */
+const gridRow = (cells: string[][]): string[] => {
+  const maxH = Math.max(...cells.map((c) => c.length));
+  const padded = cells.map((c) => [
+    ...c,
+    ...Array<string>(maxH - c.length).fill(""),
+  ]);
+  return Array.from({ length: maxH }, (_, i) =>
+    `│${padded.map((c) => padR(c[i], COL)).join("│")}│`,
+  );
+};
+
+/* ── Formatting helpers ────────────────────────────────────── */
+
+const gradeColor = (g: string): ((s: string) => string) => {
+  switch (g) {
+    case "A":
+      return pc.green;
+    case "B":
+      return pc.green;
+    case "C":
+      return pc.yellow;
+    case "D":
+      return pc.red;
+    default:
+      return pc.red;
+  }
+};
+
+const daysLabel = (d: number | null): string => {
+  if (d === null) return "Unknown";
+  if (d === 0) return "Today";
+  if (d === 1) return "1 day ago";
+  return `${d} days ago`;
+};
+
+/** Highlight a value (bold white). */
+const hi = (x: string | number | boolean): string =>
+  pc.bold(pc.white(String(x)));
+
+const stackLabel = (r: SourcePulseReport): string =>
+  [r.stack.framework, r.stack.orm, r.stack.bundler, r.stack.testRunner]
+    .filter(Boolean)
+    .join(" + ") || r.stack.runtime;
+
+/* ── Public API ────────────────────────────────────────────── */
 
 export const renderTerminalReport = (report: SourcePulseReport): string => {
   const { results } = report;
-  const output = [
-    pc.bold(`sourcepulse v${report.version}`),
+  const gc = gradeColor(report.score.grade);
+
+  const out: string[] = [
     "",
-    `Scanning ${pc.cyan(report.projectName)} (${stackLabel(report)})`,
+    `  ${pc.green(`sourcepulse v${report.version}`)}`,
+    `  Scanning ${pc.cyan(report.projectName)} (${stackLabel(report)})`,
     "",
-    pc.bold(`Overall Score: ${report.score.score}/100 (${report.score.grade})`),
-    "",
-    pc.bold(categoryLabels.deps),
-    line("Outdated", results.deps.outdated.length),
-    line("Unused", results.deps.unused.length),
-    line("Vulnerabilities", results.deps.vulnerabilities.total),
-    "",
-    pc.bold(categoryLabels.dead),
-    line("Unused exports", results.dead.unusedExports.length),
-    line("Orphan files", results.dead.orphanFiles.length),
-    "",
-    pc.bold(categoryLabels.env),
-    line("Ghost vars", results.env.ghostVars.length),
-    line("Phantom refs", results.env.phantomRefs.length),
-    "",
-    pc.bold(categoryLabels.circular),
-    line("Cycles", results.circular.cycles.length),
-    "",
-    pc.bold(categoryLabels.security),
-    line("Hardcoded secrets", results.security.hardcodedSecrets.length),
-    line(".env committed", results.security.envCommitted ? "Yes" : "No"),
-    "",
-    pc.bold(categoryLabels.freshness),
-    line(
-      "Last commit",
-      results.freshness.daysSinceCommit === null
-        ? "Unknown"
-        : results.freshness.daysSinceCommit === 0
-          ? "Today"
-          : `${results.freshness.daysSinceCommit} days ago`,
+    pc.bold(
+      `Overall Score: ${gc(`${report.score.score}/100`)} ${gc(`(${report.score.grade})`)}`,
     ),
-    line(
-      "Last release",
-      results.freshness.daysSinceRelease === null
-        ? "Unknown"
-        : results.freshness.daysSinceRelease === 0
-          ? "Today"
-          : `${results.freshness.daysSinceRelease} days ago`,
-    ),
+    "",
   ];
 
-  if (report.plugins.length > 0) {
-    output.push("", pc.bold("Plugins"));
-    for (const plugin of report.plugins)
-      output.push(line(plugin.name, `${plugin.findings.length} findings`));
-  }
+  /* ── Row 1: Deps · Dead Code · Environment ── */
+
+  const deps: string[] = [
+    ` 📦 ${pc.green(pc.bold("Dependencies"))}`,
+    `  • Outdated:        ${hi(results.deps.outdated.length)}`,
+    `  • Unused:          ${hi(results.deps.unused.length)}`,
+    `  • Vulnerabilities: ${hi(results.deps.vulnerabilities.total)}`,
+  ];
+
+  const dead: string[] = [
+    ` 🔪 ${pc.cyan(pc.bold("Dead Code"))}`,
+    `  • Unused exports: ${hi(results.dead.unusedExports.length)}`,
+    `  • Orphan files:   ${hi(results.dead.orphanFiles.length)}`,
+  ];
+
+  const env: string[] = [
+    ` 🌿 ${pc.green(pc.bold("Environment"))}`,
+    `  • Ghost vars:   ${hi(results.env.ghostVars.length)}`,
+    `  • Phantom refs: ${hi(results.env.phantomRefs.length)}`,
+  ];
+
+  /* ── Row 2: Circular · Security · Freshness ── */
+
+  const circ: string[] = [
+    ` 🔗 ${pc.yellow(pc.bold("Circular Dependencies"))}`,
+    `  • Cycles found: ${hi(results.circular.cycles.length)}`,
+  ];
+
+  const sec: string[] = [
+    ` 🔒 ${pc.red(pc.bold("Security"))}`,
+    `  • Hardcoded secrets: ${hi(results.security.hardcodedSecrets.length)}`,
+    `  • .env committed:    ${hi(results.security.envCommitted ? "Yes" : "No")}`,
+  ];
+
+  const fresh: string[] = [
+    ` 📈 ${pc.blue(pc.bold("Freshness"))}`,
+    `  • Last commit:    ${hi(daysLabel(results.freshness.daysSinceCommit))}`,
+    `  • Last release:   ${hi(daysLabel(results.freshness.daysSinceRelease))}`,
+    `  • Stale branches: ${hi(results.freshness.staleBranches.length)}`,
+  ];
+
+  out.push(topBorder, ...gridRow([deps, dead, env]));
+  out.push(midBorder, ...gridRow([circ, sec, fresh]));
+  out.push(botBorder);
+
+  /* ── Quick Wins ── */
 
   if (report.quickWins.length > 0) {
-    output.push("", pc.bold("Quick Wins"));
-    report.quickWins.forEach((win, index) => {
-      output.push(`  ${index + 1}. ${win}`);
+    out.push("", ` 💡 ${pc.yellow(pc.bold("Quick Wins"))}`);
+    report.quickWins.forEach((win, i) => {
+      out.push(`    ${pc.dim(`${i + 1}.`)} ${win}`);
     });
   }
 
-  if (report.fixes?.removedDependencies.length) {
-    output.push("", pc.bold("Applied Fixes"));
-    output.push(
-      line("Removed packages", report.fixes.removedDependencies.join(", ")),
-    );
-    for (const warning of report.fixes.warnings)
-      output.push(line("Warning", warning));
+  /* ── Plugins ── */
+
+  if (report.plugins.length > 0) {
+    out.push("", ` 🔌 ${pc.magenta(pc.bold("Plugins"))}`);
+    for (const plugin of report.plugins) {
+      out.push(
+        `    • ${plugin.name}: ${hi(`${plugin.findings.length} findings`)}`,
+      );
+    }
   }
 
-  for (const warning of results.deps.warnings)
-    output.push("", pc.yellow(`Warning: ${warning}`));
-  return output.join("\n");
+  /* ── Applied Fixes ── */
+
+  if (report.fixes?.removedDependencies.length) {
+    out.push("", ` 🔧 ${pc.green(pc.bold("Applied Fixes"))}`);
+    out.push(
+      `    • Removed packages: ${hi(report.fixes.removedDependencies.join(", "))}`,
+    );
+    for (const w of report.fixes.warnings) {
+      out.push(`    • ${pc.yellow("Warning:")} ${w}`);
+    }
+  }
+
+  /* ── Dep warnings ── */
+
+  for (const w of results.deps.warnings) {
+    out.push("", pc.yellow(`⚠  Warning: ${w}`));
+  }
+
+  out.push("");
+  return out.join("\n");
 };
 
 export const renderJsonReport = (report: SourcePulseReport): string =>
